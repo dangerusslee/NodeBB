@@ -92,12 +92,28 @@ module.exports = function (Topics) {
 		if (!topic) {
 			return;
 		}
+		if (topic.hasOwnProperty('title')) {
+			topic.titleRaw = topic.title;
+			topic.title = String(topic.title);
+		}
 
-		topic.titleRaw = topic.title;
-		topic.title = String(topic.title);
 		escapeTitle(topic);
-		topic.timestampISO = utils.toISOString(topic.timestamp);
-		topic.lastposttimeISO = utils.toISOString(topic.lastposttime);
+		if (topic.hasOwnProperty('timestamp')) {
+			topic.timestampISO = utils.toISOString(topic.timestamp);
+		}
+		if (topic.hasOwnProperty('lastposttime')) {
+			topic.lastposttimeISO = utils.toISOString(topic.lastposttime);
+		}
+
+		if (topic.hasOwnProperty('upvotes')) {
+			topic.upvotes = parseInt(topic.upvotes, 10) || 0;
+		}
+		if (topic.hasOwnProperty('upvotes')) {
+			topic.downvotes = parseInt(topic.downvotes, 10) || 0;
+		}
+		if (topic.hasOwnProperty('upvotes') && topic.hasOwnProperty('downvotes')) {
+			topic.votes = topic.upvotes - topic.downvotes;
+		}
 	}
 
 	Topics.getCategoryData = function (tid, callback) {

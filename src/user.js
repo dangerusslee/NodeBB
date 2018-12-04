@@ -274,7 +274,7 @@ User.getAdminsandGlobalMods = function (callback) {
 			], next);
 		},
 		function (results, next) {
-			User.getUsersData(_.union(results), next);
+			User.getUsersData(_.union.apply(_, results), next);
 		},
 	], callback);
 };
@@ -435,3 +435,4 @@ User.addInterstitials = function (callback) {
 	callback();
 };
 
+User.async = require('./promisify')(User);

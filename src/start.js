@@ -47,7 +47,7 @@ start.start = function () {
 			var webserver = require('./webserver');
 			require('./socket.io').init(webserver.server);
 
-			if (nconf.get('isPrimary') === 'true' && !nconf.get('jobsDisabled')) {
+			if (nconf.get('runJobs')) {
 				require('./notifications').startJobs();
 				require('./user').startJobs();
 			}
@@ -118,19 +118,6 @@ function addProcessHandlers() {
 	process.on('SIGTERM', shutdown);
 	process.on('SIGINT', shutdown);
 	process.on('SIGHUP', restart);
-	process.on('message', function (message) {
-		if (typeof message !== 'object') {
-			return;
-		}
-		var meta = require('./meta');
-
-		switch (message.action) {
-		case 'reload':
-			meta.reload();
-			break;
-		}
-	});
-
 	process.on('uncaughtException', function (err) {
 		winston.error(err);
 

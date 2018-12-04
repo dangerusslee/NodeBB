@@ -78,6 +78,7 @@
     "still-uploading": "Venligst vent til overførslen er færdig",
     "file-too-big": "Maksimum filstørrelse er %1 kB - venligst overfør en mindre fil",
     "guest-upload-disabled": "Gæsteupload er deaktiveret",
+    "cors-error": "Unable to upload image due to misconfigured CORS",
     "already-bookmarked": "You have already bookmarked this post",
     "already-unbookmarked": "You have already unbookmarked this post",
     "cant-ban-other-admins": "Du kan ikke udlukke andre administatrorer!",
@@ -87,6 +88,7 @@
     "invalid-image-type": "Invalid billed type. De tilladte typer er: %1",
     "invalid-image-extension": "Forkert billede filnavnsendelse",
     "invalid-file-type": "Invalid fil type. Tilladte typer er: %1",
+    "invalid-image-dimensions": "Image dimensions are too big",
     "group-name-too-short": "Gruppe navn for kort",
     "group-name-too-long": "Group name too long",
     "group-already-exists": "Gruppen eksisterer allerede",
@@ -127,6 +129,8 @@
     "not-enough-reputation-min-rep-website": "You do not have enough reputation to add a website",
     "not-enough-reputation-min-rep-aboutme": "You do not have enough reputation to add an about me",
     "not-enough-reputation-min-rep-signature": "You do not have enough reputation to add a signature",
+    "not-enough-reputation-min-rep-profile-picture": "You do not have enough reputation to add a profile picture",
+    "not-enough-reputation-min-rep-cover-picture": "You do not have enough reputation to add a cover picture",
     "already-flagged": "Du har allerede vurderet dette indlæg",
     "self-vote": "You cannot vote on your own post",
     "reload-failed": "NodeBB stødte på et problem under genindlæsningen : \"%1\". NodeBB vil fortsætte med en ældre version, og det er nok god ide at genoptage fra lige før du genindlæste siden.",
@@ -148,5 +152,6 @@
     "no-topics-selected": "No topics selected!",
     "cant-move-to-same-topic": "Can't move post to same topic!",
     "cannot-block-self": "You cannot block yourself!",
-    "cannot-block-privileged": "You cannot block administrators or global moderators"
+    "cannot-block-privileged": "You cannot block administrators or global moderators",
+    "no-connection": "There seems to be a problem with your internet connection"
 }

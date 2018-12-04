@@ -226,7 +226,7 @@ app.cacheBuster = null;
 	};
 
 	function highlightNavigationLink() {
-		var path = window.location.pathname;
+		var path = window.location.pathname + window.location.search;
 		$('#main-nav li').removeClass('active');
 		if (path) {
 			$('#main-nav li').removeClass('active').find('a[href="' + path + '"]').parent().addClass('active');
@@ -342,7 +342,7 @@ app.cacheBuster = null;
 
 		require(['chat'], function (chat) {
 			function loadAndCenter(chatModal) {
-				chat.load(chatModal.attr('UUID'));
+				chat.load(chatModal.attr('data-uuid'));
 				chat.center(chatModal);
 				chat.focusInput(chatModal);
 			}
@@ -521,7 +521,7 @@ app.cacheBuster = null;
 		}
 
 		searchButton.on('click', function (e) {
-			if (!config.loggedIn && !config.allowGuestSearching) {
+			if (!config.loggedIn && !app.user.privileges['search:content']) {
 				app.alert({
 					message: '[[error:search-requires-login]]',
 					timeout: 3000,
@@ -564,7 +564,9 @@ app.cacheBuster = null;
 				$('[data-uid="' + app.user.uid + '"] [component="user/status"], [component="header/profilelink"] [component="user/status"]')
 					.removeClass('away online dnd offline')
 					.addClass(status);
-
+				$('[component="header/usercontrol"] [data-status]').each(function () {
+					$(this).find('span').toggleClass('bold', $(this).attr('data-status') === status);
+				});
 				app.user.status = status;
 			});
 			e.preventDefault();

@@ -57,6 +57,24 @@ define('forum/chats', [
 		Chats.addLeaveHandler(ajaxify.data.roomId, components.get('chat/controls').find('[data-action="leave"]'));
 		Chats.addScrollHandler(ajaxify.data.roomId, ajaxify.data.uid, $('.chat-content'));
 		Chats.addCharactersLeftHandler($('[component="chat/main-wrapper"]'));
+		Chats.addIPHandler($('[component="chat/main-wrapper"]'));
+
+		$('[data-action="close"]').on('click', function () {
+			Chats.switchChat();
+		});
+	};
+
+	Chats.addIPHandler = function (container) {
+		container.on('click', '.chat-ip-button', function () {
+			var ipEl = $(this).parent();
+			var mid = ipEl.parents('[data-mid]').attr('data-mid');
+			socket.emit('modules.chats.getIP', mid, function (err, ip) {
+				if (err) {
+					return app.alertError(err);
+				}
+				ipEl.html(ip);
+			});
+		});
 	};
 
 	Chats.addPopoutHandler = function () {
@@ -101,6 +119,14 @@ define('forum/chats', [
 					return app.alertError(err.message);
 				}
 				if (!data) {
+					loading = false;
+					return;
+				}
+				data = data.filter(function (chatMsg) {
+					return !$('[component="chat/message"][data-mid="' + chatMsg.messageId + '"]').length;
+				});
+				if (!data.length) {
+					loading = false;
 					return;
 				}
 				messages.parseMessage(data, function (html) {
@@ -371,6 +397,11 @@ define('forum/chats', [
 	};
 
 	Chats.switchChat = function (roomid) {
+		// Allow empty arg for return to chat list/close chat
+		if (!roomid) {
+			roomid = '';
+		}
+
 		var url = 'user/' + ajaxify.data.userslug + '/chats/' + roomid;
 		if (self.fetch) {
 			fetch(config.relative_path + '/api/' + url, { credentials: 'include' })

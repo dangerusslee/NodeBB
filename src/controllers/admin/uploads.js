@@ -5,7 +5,6 @@ var async = require('async');
 var nconf = require('nconf');
 var mime = require('mime');
 var fs = require('fs');
-var jimp = require('jimp');
 
 var meta = require('../../meta');
 var posts = require('../../posts');
@@ -69,19 +68,16 @@ uploadsController.get = function (req, res, next) {
 				setImmediate(next, null, files);
 			}
 		},
-	], function (err, files) {
-		if (err) {
-			return next(err);
-		}
-
-		res.render('admin/manage/uploads', {
-			currentFolder: currentFolder.replace(nconf.get('upload_path'), ''),
-			showPids: files.length && files[0].hasOwnProperty('inPids'),
-			files: files,
-			breadcrumbs: buildBreadcrumbs(currentFolder),
-			pagination: pagination.create(page, Math.ceil(itemCount / itemsPerPage), req.query),
-		});
-	});
+		function (files) {
+			res.render('admin/manage/uploads', {
+				currentFolder: currentFolder.replace(nconf.get('upload_path'), ''),
+				showPids: files.length && files[0].hasOwnProperty('inPids'),
+				files: files,
+				breadcrumbs: buildBreadcrumbs(currentFolder),
+				pagination: pagination.create(page, Math.ceil(itemCount / itemsPerPage), req.query),
+			});
+		},
+	], next);
 };
 
 function buildBreadcrumbs(currentFolder) {
@@ -180,16 +176,13 @@ uploadsController.uploadTouchIcon = function (req, res, next) {
 			}
 
 			// Resize the image into squares for use as touch icons at various DPIs
-			async.each(sizes, function (size, next) {
-				async.series([
-					async.apply(file.saveFileToLocal, 'touchicon-' + size + '.png', 'system', uploadedFile.path),
-					async.apply(image.resizeImage, {
-						path: path.join(nconf.get('upload_path'), 'system', 'touchicon-' + size + '.png'),
-						extension: 'png',
-						width: size,
-						height: size,
-					}),
-				], next);
+			async.eachSeries(sizes, function (size, next) {
+				image.resizeImage({
+					path: uploadedFile.path,
+					target: path.join(nconf.get('upload_path'), 'system', 'touchicon-' + size + '.png'),
+					width: size,
+					height: size,
+				}, next);
 			}, function (err) {
 				file.delete(uploadedFile.path);
 
@@ -294,7 +287,6 @@ function uploadImage(filename, folder, uploadedFile, req, res, next) {
 					async.apply(image.resizeImage, {
 						path: uploadedFile.path,
 						target: uploadPath,
-						extension: 'png',
 						height: 50,
 					}),
 					async.apply(meta.configs.set, 'brand:emailLogo', path.join(nconf.get('upload_url'), 'system/site-logo-x50.png')),
@@ -302,15 +294,16 @@ function uploadImage(filename, folder, uploadedFile, req, res, next) {
 					next(err, imageData);
 				});
 			} else if (path.basename(filename, path.extname(filename)) === 'og:image' && folder === 'system') {
-				jimp.read(imageData.path).then(function (image) {
+				image.size(imageData.path, function (err, size) {
+					if (err) {
+						next(err);
+					}
 					meta.configs.setMultiple({
-						'og:image:height': image.bitmap.height,
-						'og:image:width': image.bitmap.width,
+						'og:image:width': size.width,
+						'og:image:height': size.height,
 					}, function (err) {
 						next(err, imageData);
 					});
-				}).catch(function (err) {
-					next(err);
 				});
 			} else {
 				setImmediate(next, null, imageData);

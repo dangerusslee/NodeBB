@@ -55,7 +55,7 @@
 	"anonymous": "Névtelen",
 	"registered": "Regisztrált",
 
-	"user-presence": "Felhasználói jelentlét",
+	"user-presence": "Felhasználói jelenlét",
 	"on-categories": "A kategória listán",
 	"reading-posts": "Hozzászólásokat olvas",
 	"browsing-topics": "Témaköröket böngész",
@@ -68,5 +68,6 @@
 	"graphs.unique-visitors": "Egyedi látogatók",
 	"graphs.registered-users": "Regisztrált felhasználók",
 	"graphs.anonymous-users": "Névtelen felhasználók",
-	"last-restarted-by": "Utoljára újraindította:"
+	"last-restarted-by": "Utoljára újraindította:",
+	"no-users-browsing": "No users browsing"
 }

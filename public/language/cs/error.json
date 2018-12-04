@@ -78,6 +78,7 @@
     "still-uploading": "Vyčkejte, než se vše kompletně nahraje.",
     "file-too-big": "Maximální povolená velikost je %1 kB – nahrajte menší soubor",
     "guest-upload-disabled": "Nahrávání od hostů nebylo povoleno",
+    "cors-error": "Není možné nahrát obrázek díky špatně nakonfigurovanému „Cross-Origin Resource Sharing (CORS)”",
     "already-bookmarked": "Již jste tento příspěvek zazáložkoval",
     "already-unbookmarked": "Již jste u tohoto příspěvku odebral záložku",
     "cant-ban-other-admins": "Nemůžete zablokovat jiné správce.",
@@ -87,6 +88,7 @@
     "invalid-image-type": "Neplatný typ obrázku. Povolené typy jsou: %1",
     "invalid-image-extension": "Neplatná přípona obrázku",
     "invalid-file-type": "Neplatný typ souboru. Povolené typy jsou: %1",
+    "invalid-image-dimensions": "Image dimensions are too big",
     "group-name-too-short": "Název skupiny je moc krátký",
     "group-name-too-long": "Název skupiny je moc dlouhý",
     "group-already-exists": "Skupina už existuje",
@@ -127,6 +129,8 @@
     "not-enough-reputation-min-rep-website": "Pro přidání webové stránky nemáte dostatek reputace",
     "not-enough-reputation-min-rep-aboutme": "Pro přidání „O mně” nemáte dostatek reputace",
     "not-enough-reputation-min-rep-signature": "Pro přidání podpisu nemáte dostatek reputace",
+    "not-enough-reputation-min-rep-profile-picture": "Pro přidání profilového obrázku nemáte dostatek reputace",
+    "not-enough-reputation-min-rep-cover-picture": "Pro přidání obrázku nemáte dostatek reputace",
     "already-flagged": "Tento příspěvek jste již označil",
     "self-vote": "U svého vlastního příspěvku nemůžete hlasovat",
     "reload-failed": "Vyskytla se chyba v NodeBB při znovu načtení: \"%1\". NodeBB bude pokračovat v běhu na straně klienta,  nicméně byste měl/a přenastavit zpět to, co jste udělal/a před opětovným načtením.",
@@ -148,5 +152,6 @@
     "no-topics-selected": "Žádná vybraná témata.",
     "cant-move-to-same-topic": "Není možné přesunout příspěvek do stejného tématu!",
     "cannot-block-self": "Nemůžete zablokovat sebe sama!",
-    "cannot-block-privileged": "Nemůžete zablokovat správce nebo hlavní moderátory"
+    "cannot-block-privileged": "Nemůžete zablokovat správce nebo hlavní moderátory",
+    "no-connection": "Zdá se, že nastal problém s připojením k internetu"
 }

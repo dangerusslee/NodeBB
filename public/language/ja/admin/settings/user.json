@@ -1,6 +1,5 @@
 {
 	"authentication": "認証",
-	"allow-local-login": "ローカルログインを有効にする",
 	"require-email-confirmation": "Eメールの確認が必要です",
 	"email-confirm-interval": "ユーザーが確認するまでEメールを再送信しない",
 	"email-confirm-email2": "分経過",
@@ -53,7 +52,7 @@
 	"show-fullname": "フルネームで表示",
 	"restrict-chat": "フォローしたユーザーからのチャットメッセージだけを許可する",
 	"outgoing-new-tab": "外部リンクを新しいタブで開く",
-	"topic-search": "インースレッドの検索を有効にします",
+	"topic-search": "スレッド内検索を有効にする",
 	"digest-freq": "お知らせを購読する",
 	"digest-freq.off": "オフ",
 	"digest-freq.daily": "デイリー",

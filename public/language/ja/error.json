@@ -78,6 +78,7 @@
     "still-uploading": "アップロードが完成するまでお待ちください。",
     "file-too-big": "%1kBより大きいサイズファイルが許されません－より小さいファイルをアップして下さい。",
     "guest-upload-disabled": "ゲストさんからのアップを無効にしています",
+    "cors-error": "Unable to upload image due to misconfigured CORS",
     "already-bookmarked": "あなたは、この投稿をすでにブックマークしています",
     "already-unbookmarked": "あなたは、この投稿をすでにブックマークから外しています",
     "cant-ban-other-admins": "ほかの管理者を停止することはできません！",
@@ -87,6 +88,7 @@
     "invalid-image-type": "無効なイメージタイプです。許可された種類は: %1",
     "invalid-image-extension": "無効なイメージのエクステンション",
     "invalid-file-type": "無効なファイルタイプです。許可された種類は: %1",
+    "invalid-image-dimensions": "Image dimensions are too big",
     "group-name-too-short": "グループ名は短すぎます。",
     "group-name-too-long": "グループ名が長すぎます",
     "group-already-exists": "グループ名はすでに存在しています",
@@ -127,6 +129,8 @@
     "not-enough-reputation-min-rep-website": "You do not have enough reputation to add a website",
     "not-enough-reputation-min-rep-aboutme": "You do not have enough reputation to add an about me",
     "not-enough-reputation-min-rep-signature": "You do not have enough reputation to add a signature",
+    "not-enough-reputation-min-rep-profile-picture": "You do not have enough reputation to add a profile picture",
+    "not-enough-reputation-min-rep-cover-picture": "You do not have enough reputation to add a cover picture",
     "already-flagged": "You have already flagged this post",
     "self-vote": "You cannot vote on your own post",
     "reload-failed": "NodeBB encountered a problem while reloading: \"%1\". NodeBB will continue to serve the existing client-side assets, although you should undo what you did just prior to reloading.",
@@ -148,5 +152,6 @@
     "no-topics-selected": "No topics selected!",
     "cant-move-to-same-topic": "Can't move post to same topic!",
     "cannot-block-self": "You cannot block yourself!",
-    "cannot-block-privileged": "You cannot block administrators or global moderators"
+    "cannot-block-privileged": "You cannot block administrators or global moderators",
+    "no-connection": "There seems to be a problem with your internet connection"
 }

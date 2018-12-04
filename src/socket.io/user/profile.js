@@ -15,7 +15,7 @@ module.exports = function (SocketUser) {
 
 		async.waterfall([
 			function (next) {
-				isPrivilegedOrSelfAndPasswordMatch(socket.uid, data, next);
+				isPrivilegedOrSelfAndPasswordMatch(socket, data, next);
 			},
 			function (next) {
 				SocketUser.updateProfile(socket, data, next);
@@ -32,6 +32,9 @@ module.exports = function (SocketUser) {
 				user.isAdminOrGlobalModOrSelf(socket.uid, data.uid, next);
 			},
 			function (next) {
+				user.checkMinReputation(socket.uid, data.uid, 'min:rep:cover-picture', next);
+			},
+			function (next) {
 				user.updateCoverPicture(data, next);
 			},
 		], callback);
@@ -44,6 +47,9 @@ module.exports = function (SocketUser) {
 		async.waterfall([
 			function (next) {
 				user.isAdminOrGlobalModOrSelf(socket.uid, data.uid, next);
+			},
+			function (next) {
+				user.checkMinReputation(socket.uid, data.uid, 'min:rep:profile-picture', next);
 			},
 			function (next) {
 				user.uploadCroppedPicture(data, next);
@@ -66,26 +72,19 @@ module.exports = function (SocketUser) {
 		], callback);
 	};
 
-	function isPrivilegedOrSelfAndPasswordMatch(uid, data, callback) {
+	function isPrivilegedOrSelfAndPasswordMatch(socket, data, callback) {
+		const uid = socket.uid;
+		const isSelf = parseInt(uid, 10) === parseInt(data.uid, 10);
+
 		async.waterfall([
 			function (next) {
 				async.parallel({
 					isAdmin: async.apply(user.isAdministrator, uid),
 					isTargetAdmin: async.apply(user.isAdministrator, data.uid),
 					isGlobalMod: async.apply(user.isGlobalModerator, uid),
-					hasPassword: async.apply(user.hasPassword, data.uid),
-					passwordMatch: function (next) {
-						if (data.password) {
-							user.isPasswordCorrect(data.uid, data.password, next);
-						} else {
-							next(null, false);
-						}
-					},
 				}, next);
 			},
 			function (results, next) {
-				var isSelf = parseInt(uid, 10) === parseInt(data.uid, 10);
-
 				if (results.isTargetAdmin && !results.isAdmin) {
 					return next(new Error('[[error:no-privileges]]'));
 				}
@@ -94,6 +93,17 @@ module.exports = function (SocketUser) {
 					return next(new Error('[[error:no-privileges]]'));
 				}
 
+				async.parallel({
+					hasPassword: async.apply(user.hasPassword, data.uid),
+					passwordMatch: function (next) {
+						if (data.password) {
+							user.isPasswordCorrect(data.uid, data.password, socket.ip, next);
+						} else {
+							next(null, false);
+						}
+					},
+				}, next);
+			}, function (results, next) {
 				if (isSelf && results.hasPassword && !results.passwordMatch) {
 					return next(new Error('[[error:invalid-password]]'));
 				}
@@ -102,13 +112,6 @@ module.exports = function (SocketUser) {
 			},
 		], callback);
 	}
-
-	SocketUser.checkPassword = function (socket, data, callback) {
-		isPrivilegedOrSelfAndPasswordMatch(socket.uid, data, function (err) {
-			// Return a bool (without delayed response to prevent brute-force checking of password validity)
-			setTimeout(callback.bind(null, null, !err), 1000);
-		});
-	};
 
 	SocketUser.changePassword = function (socket, data, callback) {
 		if (!socket.uid) {
@@ -120,7 +123,7 @@ module.exports = function (SocketUser) {
 		}
 		async.waterfall([
 			function (next) {
-				user.changePassword(socket.uid, data, next);
+				user.changePassword(socket.uid, Object.assign(data, { ip: socket.ip }), next);
 			},
 			function (next) {
 				events.log({
@@ -202,20 +205,29 @@ module.exports = function (SocketUser) {
 	};
 
 	SocketUser.toggleBlock = function (socket, data, callback) {
+		let isBlocked;
+
 		async.waterfall([
 			function (next) {
-				user.blocks.can(data.uid, function (err, can) {
-					if (err || !can) {
-						return next(err || new Error('[[error:cannot-block-privileged]]'));
-					}
+				async.parallel({
+					can: function (next) {
+						user.blocks.can(socket.uid, data.blockerUid, data.blockeeUid, next);
+					},
+					is: function (next) {
+						user.blocks.is(data.blockeeUid, data.blockerUid, next);
+					},
+				}, next);
+			},
+			function (results, next) {
+				isBlocked = results.is;
+				if (!results.can && !isBlocked) {
+					return next(new Error('[[error:cannot-block-privileged]]'));
+				}
 
-					next();
-				});
+				user.blocks[isBlocked ? 'remove' : 'add'](data.blockeeUid, data.blockerUid, next);
 			},
-			async.apply(user.blocks.is, data.uid, socket.uid),
-			function (is, next) {
-				user.blocks[is ? 'remove' : 'add'](data.uid, socket.uid, next);
-			},
-		], callback);
+		], function (err) {
+			callback(err, !isBlocked);
+		});
 	};
 };

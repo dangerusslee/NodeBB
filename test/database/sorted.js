@@ -42,6 +42,21 @@ describe('Sorted Set methods', function () {
 				done();
 			});
 		});
+
+		it('should gracefully handle adding the same element twice', function (done) {
+			db.sortedSetAdd('sorted2', [1, 2], ['value1', 'value1'], function (err) {
+				assert.equal(err, null);
+				assert.equal(arguments.length, 1);
+
+				db.sortedSetScore('sorted2', 'value1', function (err, score) {
+					assert.equal(err, null);
+					assert.equal(score, 2);
+					assert.equal(arguments.length, 2);
+
+					done();
+				});
+			});
+		});
 	});
 
 	describe('sortedSetsAdd()', function () {
@@ -584,6 +599,15 @@ describe('Sorted Set methods', function () {
 				done();
 			});
 		});
+
+		it('should return an array of values and scores from both sorted sets sorted by scores lowest to highest', function (done) {
+			db.getSortedSetUnion({ sets: ['sortedSetTest2', 'sortedSetTest3'], start: 0, stop: -1, withScores: true }, function (err, data) {
+				assert.equal(err, null);
+				assert.equal(arguments.length, 2);
+				assert.deepEqual(data, [{ value: 'value1', score: 1 }, { value: 'value2', score: 2 }, { value: 'value4', score: 8 }]);
+				done();
+			});
+		});
 	});
 
 	describe('getSortedSetRevUnion()', function () {
@@ -684,9 +708,9 @@ describe('Sorted Set methods', function () {
 				assert.ifError(err);
 				db.sortedSetAdd('multiTest6', [2], ['two'], function (err) {
 					assert.ifError(err);
-					db.sortedSetAdd('multiTest7', [3], ['three'], function (err) {
+					db.sortedSetAdd('multiTest7', [3], [333], function (err) {
 						assert.ifError(err);
-						db.sortedSetRemove(['multiTest5', 'multiTest6', 'multiTest7'], ['one', 'two', 'three'], function (err) {
+						db.sortedSetRemove(['multiTest5', 'multiTest6', 'multiTest7'], ['one', 'two', 333], function (err) {
 							assert.ifError(err);
 							db.getSortedSetsMembers(['multiTest5', 'multiTest6', 'multiTest7'], function (err, members) {
 								assert.ifError(err);

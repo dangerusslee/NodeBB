@@ -7,6 +7,7 @@ var validator = require('validator');
 var meta = require('../meta');
 var user = require('../user');
 var plugins = require('../plugins');
+var privileges = require('../privileges');
 var helpers = require('./helpers');
 
 var Controllers = module.exports;
@@ -39,32 +40,41 @@ Controllers.errors = require('./errors');
 Controllers.composer = require('./composer');
 
 Controllers.reset = function (req, res, next) {
+	const renderReset = function (code, valid) {
+		res.render('reset_code', {
+			valid: valid,
+			displayExpiryNotice: req.session.passwordExpired,
+			code: code,
+			minimumPasswordLength: parseInt(meta.config.minimumPasswordLength, 10),
+			minimumPasswordStrength: parseInt(meta.config.minimumPasswordStrength, 10),
+			breadcrumbs: helpers.buildBreadcrumbs([
+				{
+					text: '[[reset_password:reset_password]]',
+					url: '/reset',
+				},
+				{
+					text: '[[reset_password:update_password]]',
+				},
+			]),
+			title: '[[pages:reset]]',
+		});
+		delete req.session.passwordExpired;
+	};
+
 	if (req.params.code) {
-		async.waterfall([
-			function (next) {
-				user.reset.validate(req.params.code, next);
-			},
-			function (valid) {
-				res.render('reset_code', {
-					valid: valid,
-					displayExpiryNotice: req.session.passwordExpired,
-					code: req.params.code,
-					minimumPasswordLength: parseInt(meta.config.minimumPasswordLength, 10),
-					minimumPasswordStrength: parseInt(meta.config.minimumPasswordStrength, 10),
-					breadcrumbs: helpers.buildBreadcrumbs([
-						{
-							text: '[[reset_password:reset_password]]',
-							url: '/reset',
-						},
-						{
-							text: '[[reset_password:update_password]]',
-						},
-					]),
-					title: '[[pages:reset]]',
-				});
-				delete req.session.passwordExpired;
-			},
-		], next);
+		// Save to session and redirect
+		req.session.reset_code = req.params.code;
+		res.redirect(nconf.get('relative_path') + '/reset');
+	} else if (req.session.reset_code) {
+		// Validate and save to local variable before removing from session
+		user.reset.validate(req.session.reset_code, function (err, valid) {
+			if (err) {
+				return next(err);
+			}
+
+			renderReset(req.session.reset_code, valid);
+			delete req.session.reset_code;
+		});
 	} else {
 		res.render('reset', {
 			code: null,
@@ -97,7 +107,6 @@ Controllers.login = function (req, res, next) {
 
 	data.alternate_logins = loginStrategies.length > 0;
 	data.authentication = loginStrategies;
-	data.allowLocalLogin = parseInt(meta.config.allowLocalLogin, 10) === 1 || parseInt(req.query.local, 10) === 1;
 	data.allowRegistration = registrationType === 'normal' || registrationType === 'admin-approval' || registrationType === 'admin-approval-ip';
 	data.allowLoginWith = '[[login:' + allowLoginWith + ']]';
 	data.breadcrumbs = helpers.buildBreadcrumbs([{
@@ -106,26 +115,33 @@ Controllers.login = function (req, res, next) {
 	data.error = req.flash('error')[0] || errorText;
 	data.title = '[[pages:login]]';
 
-	if (!data.allowLocalLogin && !data.allowRegistration && data.alternate_logins && data.authentication.length === 1) {
-		if (res.locals.isAPI) {
-			return helpers.redirect(res, {
-				external: nconf.get('relative_path') + data.authentication[0].url,
-			});
+	privileges.global.canGroup('local:login', 'registered-users', function (err, hasLoginPrivilege) {
+		if (err) {
+			return next(err);
 		}
-		return res.redirect(nconf.get('relative_path') + data.authentication[0].url);
-	}
-	if (req.loggedIn) {
-		user.getUserFields(req.uid, ['username', 'email'], function (err, user) {
-			if (err) {
-				return next(err);
+
+		data.allowLocalLogin = hasLoginPrivilege || parseInt(req.query.local, 10) === 1;
+		if (!data.allowLocalLogin && !data.allowRegistration && data.alternate_logins && data.authentication.length === 1) {
+			if (res.locals.isAPI) {
+				return helpers.redirect(res, {
+					external: nconf.get('relative_path') + data.authentication[0].url,
+				});
 			}
-			data.username = allowLoginWith === 'email' ? user.email : user.username;
-			data.alternate_logins = false;
+			return res.redirect(nconf.get('relative_path') + data.authentication[0].url);
+		}
+		if (req.loggedIn) {
+			user.getUserFields(req.uid, ['username', 'email'], function (err, user) {
+				if (err) {
+					return next(err);
+				}
+				data.username = allowLoginWith === 'email' ? user.email : user.username;
+				data.alternate_logins = false;
+				res.render('login', data);
+			});
+		} else {
 			res.render('login', data);
-		});
-	} else {
-		res.render('login', data);
-	}
+		}
+	});
 };
 
 Controllers.register = function (req, res, next) {

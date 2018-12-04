@@ -8,6 +8,8 @@ var user = require('../user');
 var privileges = require('../privileges');
 var plugins = require('../plugins');
 
+var auth = require('../routes/authentication');
+
 var controllers = {
 	helpers: require('../controllers/helpers'),
 };
@@ -22,7 +24,19 @@ module.exports = function (middleware) {
 			return plugins.fireHook('action:middleware.authenticate', {
 				req: req,
 				res: res,
-				next: next,
+				next: function (err) {
+					if (err) {
+						return next(err);
+					}
+
+					auth.setAuthVars(req, res, function () {
+						if (req.loggedIn && req.user && req.user.uid) {
+							return next();
+						}
+
+						controllers.helpers.notAllowed(req, res);
+					});
+				},
 			});
 		}
 
@@ -222,17 +236,5 @@ module.exports = function (middleware) {
 		} else {
 			return next();
 		}
-	};
-
-	middleware.handleBlocking = function (req, res, next) {
-		user.blocks.is(res.locals.uid, req.uid, function (err, blocked) {
-			if (err) {
-				return next(err);
-			} else if (blocked) {
-				res.status(404).render('404', { title: '[[global:404.title]]' });
-			} else {
-				return next();
-			}
-		});
 	};
 };

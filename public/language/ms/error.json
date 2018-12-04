@@ -78,6 +78,7 @@
     "still-uploading": "Sila tunggu muatnaik untuk siap.",
     "file-too-big": "Maksimum saiz fail yang dibenarkan ialah %1 kB - sila muatnaik fail yang lebih kecil",
     "guest-upload-disabled": "Tetamu tidak dibenarkan memuatnaik fail",
+    "cors-error": "Unable to upload image due to misconfigured CORS",
     "already-bookmarked": "You have already bookmarked this post",
     "already-unbookmarked": "You have already unbookmarked this post",
     "cant-ban-other-admins": "Anda tidak boleh haramkan admin / pentadbir!",
@@ -87,6 +88,7 @@
     "invalid-image-type": "Jenis imej tak sah. Jenis yang dibenarkan ialah: %1",
     "invalid-image-extension": "Sambungan imej tak sah",
     "invalid-file-type": "Jenis fail tak sah. Jenis fail yang dibenarkan ialah: %1",
+    "invalid-image-dimensions": "Image dimensions are too big",
     "group-name-too-short": "Nama kumpulan terlalu pendek",
     "group-name-too-long": "Group name too long",
     "group-already-exists": "Kumpulan telah wujud",
@@ -127,6 +129,8 @@
     "not-enough-reputation-min-rep-website": "You do not have enough reputation to add a website",
     "not-enough-reputation-min-rep-aboutme": "You do not have enough reputation to add an about me",
     "not-enough-reputation-min-rep-signature": "You do not have enough reputation to add a signature",
+    "not-enough-reputation-min-rep-profile-picture": "You do not have enough reputation to add a profile picture",
+    "not-enough-reputation-min-rep-cover-picture": "You do not have enough reputation to add a cover picture",
     "already-flagged": "Anda telah menanda kiriman ini",
     "self-vote": "You cannot vote on your own post",
     "reload-failed": "NodeBB menemui masalah ketika muat semula: \"%1\". NodeBB akan terus melayan aset pelanggan sedia ada, tapi anda seharusnya undur perbuatan yang dilakukan sebelum muat semula.",
@@ -148,5 +152,6 @@
     "no-topics-selected": "No topics selected!",
     "cant-move-to-same-topic": "Can't move post to same topic!",
     "cannot-block-self": "You cannot block yourself!",
-    "cannot-block-privileged": "You cannot block administrators or global moderators"
+    "cannot-block-privileged": "You cannot block administrators or global moderators",
+    "no-connection": "There seems to be a problem with your internet connection"
 }

@@ -3,12 +3,14 @@
 'use strict';
 
 var async = require('async');
+var winston = require('winston');
 
 var db = require('../database');
 var plugins = require('../plugins');
 var privileges = require('../privileges');
 var user = require('../user');
 var meta = require('../meta');
+var posts = require('../posts');
 
 module.exports = function (Topics) {
 	var terms = {
@@ -18,41 +20,136 @@ module.exports = function (Topics) {
 		year: 31104000000,
 	};
 
-	Topics.getRecentTopics = function (cid, uid, start, stop, filter, callback) {
-		var recentTopics = {
+	Topics.getSortedTopics = function (params, callback) {
+		var data = {
 			nextStart: 0,
+			topicCount: 0,
 			topics: [],
 		};
-		if (cid && !Array.isArray(cid)) {
-			cid = [cid];
+
+		params.term = params.term || 'alltime';
+		params.sort = params.sort || 'recent';
+		if (params.hasOwnProperty('cids') && params.cids && !Array.isArray(params.cids)) {
+			params.cids = [params.cids];
 		}
+
 		async.waterfall([
 			function (next) {
-				var key = 'topics:recent';
-				if (cid) {
-					key = cid.map(function (cid) {
-						return 'cid:' + cid + ':tids:lastposttime';
-					});
-				}
-				db.getSortedSetRevRange(key, 0, 199, next);
+				getTids(params, next);
 			},
 			function (tids, next) {
-				filterTids(tids, uid, filter, cid, next);
-			},
-			function (tids, next) {
-				recentTopics.topicCount = tids.length;
-				tids = tids.slice(start, stop + 1);
-				Topics.getTopicsByTids(tids, uid, next);
+				data.topicCount = tids.length;
+				getTopics(tids, params, next);
 			},
 			function (topicData, next) {
-				recentTopics.topics = topicData;
-				recentTopics.nextStart = stop + 1;
-				next(null, recentTopics);
+				data.topics = topicData;
+				data.nextStart = params.stop + 1;
+				next(null, data);
 			},
 		], callback);
 	};
 
-	function filterTids(tids, uid, filter, cid, callback) {
+	function getTids(params, callback) {
+		async.waterfall([
+			function (next) {
+				if (params.term === 'alltime') {
+					var key = 'topics:' + params.sort;
+					if (params.cids) {
+						key = params.cids.map(function (cid) {
+							if (params.sort === 'recent') {
+								return 'cid:' + cid + ':tids:lastposttime';
+							} else if (params.sort === 'votes') {
+								return 'cid:' + cid + ':tids:votes';
+							} else if (params.sort === 'posts') {
+								return 'cid:' + cid + ':tids:posts';
+							}
+							return 'cid:' + cid + ':tids';
+						});
+					}
+
+					db.getSortedSetRevRange(key, 0, 199, next);
+				} else {
+					Topics.getLatestTidsFromSet('topics:tid', 0, -1, params.term, next);
+				}
+			},
+			function (tids, next) {
+				if (params.term !== 'alltime') {
+					sortTids(tids, params, next);
+				} else {
+					next(null, tids);
+				}
+			},
+			function (tids, next) {
+				filterTids(tids, params.uid, params.filter, params.cids, next);
+			},
+		], callback);
+	}
+
+	function sortTids(tids, params, callback) {
+		async.waterfall([
+			function (next) {
+				Topics.getTopicsFields(tids, ['tid', 'lastposttime', 'upvotes', 'downvotes', 'postcount'], next);
+			},
+			function (topicData, next) {
+				var sortFn = sortRecent;
+				if (params.sort === 'posts') {
+					sortFn = sortPopular;
+				} else if (params.sort === 'votes') {
+					sortFn = sortVotes;
+				}
+				tids = topicData.sort(sortFn).map(function (topic) {
+					return topic && topic.tid;
+				});
+				next(null, tids);
+			},
+		], callback);
+	}
+
+	function sortRecent(a, b) {
+		return b.lastposttime - a.lastposttime;
+	}
+
+	function sortVotes(a, b) {
+		if (parseInt(a.votes, 10) !== parseInt(b.votes, 10)) {
+			return b.votes - a.votes;
+		}
+		return parseInt(b.postcount, 10) - parseInt(a.postcount, 10);
+	}
+
+	function sortPopular(a, b) {
+		if (parseInt(a.postcount, 10) !== parseInt(b.postcount, 10)) {
+			return b.postcount - a.postcount;
+		}
+		return parseInt(b.viewcount, 10) - parseInt(a.viewcount, 10);
+	}
+
+	function getTopics(tids, params, callback) {
+		async.waterfall([
+			function (next) {
+				tids = tids.slice(params.start, params.stop !== -1 ? params.stop + 1 : undefined);
+				Topics.getTopicsByTids(tids, params.uid, next);
+			},
+			function (topicData, next) {
+				topicData.forEach(function (topicObj, i) {
+					topicObj.index = params.start + i;
+				});
+				next(null, topicData);
+			},
+		], callback);
+	}
+
+	Topics.getRecentTopics = function (cid, uid, start, stop, filter, callback) {
+		Topics.getSortedTopics({
+			cids: cid,
+			uid: uid,
+			start: start,
+			stop: stop,
+			filter: filter,
+			sort: 'recent',
+		}, callback);
+	};
+
+	function filterTids(tids, uid, filter, cids, callback) {
 		async.waterfall([
 			function (next) {
 				if (filter === 'watched') {
@@ -92,10 +189,10 @@ module.exports = function (Topics) {
 				});
 			},
 			function (results, next) {
-				cid = cid && cid.map(String);
+				cids = cids && cids.map(String);
 				tids = results.topicData.filter(function (topic) {
 					if (topic && topic.cid) {
-						return results.ignoredCids.indexOf(topic.cid.toString()) === -1 && (!cid || (cid.length && cid.indexOf(topic.cid.toString()) !== -1));
+						return !results.ignoredCids.includes(topic.cid.toString()) && (!cids || (cids.length && cids.includes(topic.cid.toString())));
 					}
 					return false;
 				}).map(function (topic) {
@@ -132,32 +229,56 @@ module.exports = function (Topics) {
 		db.getSortedSetRevRangeByScore(set, start, count, '+inf', Date.now() - since, callback);
 	};
 
-	Topics.updateTimestamp = function (tid, timestamp, callback) {
-		async.parallel([
+	Topics.updateLastPostTimeFromLastPid = function (tid, callback) {
+		async.waterfall([
 			function (next) {
-				var topicData;
-				async.waterfall([
-					function (next) {
-						Topics.getTopicFields(tid, ['cid', 'deleted'], next);
-					},
-					function (_topicData, next) {
-						topicData = _topicData;
-						db.sortedSetAdd('cid:' + topicData.cid + ':tids:lastposttime', timestamp, tid, next);
-					},
-					function (next) {
-						if (parseInt(topicData.deleted, 10) === 1) {
-							return next();
-						}
-						Topics.updateRecent(tid, timestamp, next);
-					},
-				], next);
+				Topics.getLatestUndeletedPid(tid, next);
+			},
+			function (pid, next) {
+				if (!parseInt(pid, 10)) {
+					return callback();
+				}
+				posts.getPostField(pid, 'timestamp', next);
+			},
+			function (timestamp, next) {
+				if (!parseInt(timestamp, 10)) {
+					return callback();
+				}
+				Topics.updateLastPostTime(tid, timestamp, next);
+			},
+		], callback);
+	};
+
+	Topics.updateLastPostTime = function (tid, lastposttime, callback) {
+		async.waterfall([
+			function (next) {
+				Topics.setTopicField(tid, 'lastposttime', lastposttime, next);
 			},
 			function (next) {
-				Topics.setTopicField(tid, 'lastposttime', timestamp, next);
+				Topics.getTopicFields(tid, ['cid', 'deleted', 'pinned'], next);
+			},
+			function (topicData, next) {
+				var tasks = [
+					async.apply(db.sortedSetAdd, 'cid:' + topicData.cid + ':tids:lastposttime', lastposttime, tid),
+				];
+
+				if (parseInt(topicData.deleted, 10) !== 1) {
+					tasks.push(async.apply(Topics.updateRecent, tid, lastposttime));
+				}
+
+				if (parseInt(topicData.pinned, 10) !== 1) {
+					tasks.push(async.apply(db.sortedSetAdd, 'cid:' + topicData.cid + ':tids', lastposttime, tid));
+				}
+				async.series(tasks, next);
 			},
 		], function (err) {
 			callback(err);
 		});
+	};
+
+	Topics.updateTimestamp = function (tid, lastposttime, callback) {
+		winston.warn('[deprecated] Topics.updateTimestamp is deprecated please use Topics.updateLastPostTime');
+		Topics.updateLastPostTime(tid, lastposttime, callback);
 	};
 
 	Topics.updateRecent = function (tid, timestamp, callback) {

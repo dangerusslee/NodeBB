@@ -23,7 +23,6 @@ describe('Admin Controllers', function () {
 	var jar;
 
 	before(function (done) {
-		groups.resetCache();
 		async.series({
 			category: function (next) {
 				categories.create({
@@ -101,6 +100,32 @@ describe('Admin Controllers', function () {
 		});
 	});
 
+	it('should load global privileges page', function (done) {
+		request(nconf.get('url') + '/admin/manage/privileges', { jar: jar }, function (err, res, body) {
+			assert.ifError(err);
+			assert.equal(res.statusCode, 200);
+			assert(body);
+			done();
+		});
+	});
+
+	it('should load privileges page for category 1', function (done) {
+		request(nconf.get('url') + '/admin/manage/privileges/1', { jar: jar }, function (err, res, body) {
+			assert.ifError(err);
+			assert.equal(res.statusCode, 200);
+			assert(body);
+			done();
+		});
+	});
+
+	it('should load manage uploads', function (done) {
+		request(nconf.get('url') + '/admin/manage/uploads', { jar: jar }, function (err, res, body) {
+			assert.ifError(err);
+			assert.equal(res.statusCode, 200);
+			assert(body);
+			done();
+		});
+	});
 
 	it('should load general settings page', function (done) {
 		request(nconf.get('url') + '/admin/settings', { jar: jar }, function (err, res, body) {
@@ -127,7 +152,6 @@ describe('Admin Controllers', function () {
 			assert(body.history);
 			assert(Array.isArray(body.history.flags));
 			assert(Array.isArray(body.history.bans));
-			assert(Array.isArray(body.history.reasons));
 			assert(Array.isArray(body.sessions));
 			done();
 		});
@@ -159,6 +183,8 @@ describe('Admin Controllers', function () {
 				assert(body.redis);
 			} else if (nconf.get('mongo')) {
 				assert(body.mongo);
+			} else if (nconf.get('postgres')) {
+				assert(body.postgres);
 			}
 			done();
 		});

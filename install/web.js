@@ -38,6 +38,7 @@ var scripts = [
 var installing = false;
 var success = false;
 var error = false;
+var launchUrl;
 
 web.install = function (port) {
 	port = port || 4567;
@@ -89,7 +90,7 @@ function ping(req, res) {
 }
 
 function welcome(req, res) {
-	var dbs = ['redis', 'mongo'];
+	var dbs = ['redis', 'mongo', 'postgres'];
 	var databases = dbs.map(function (databaseName) {
 		var questions = require('../src/database/' + databaseName).questions.filter(function (question) {
 			return question && !question.hideOnWebInstall;
@@ -105,6 +106,7 @@ function welcome(req, res) {
 
 	res.render('install/index', {
 		url: nconf.get('url') || (req.protocol + '://' + req.get('host')),
+		launchUrl: launchUrl,
 		skipGeneralSetup: !!nconf.get('url'),
 		databases: databases,
 		skipDatabaseSetup: !!nconf.get('database'),
@@ -144,6 +146,7 @@ function install(req, res) {
 
 	winston.info('Starting setup process');
 	winston.info(setupEnvVars);
+	launchUrl = setupEnvVars.url;
 
 	var child = require('child_process').fork('app', ['--setup'], {
 		env: setupEnvVars,

@@ -207,7 +207,6 @@ module.exports = function (Topics) {
 	Topics.reply = function (data, callback) {
 		var tid = data.tid;
 		var uid = data.uid;
-		var content = data.content;
 		var postData;
 
 		async.waterfall([
@@ -248,23 +247,15 @@ module.exports = function (Topics) {
 				plugins.fireHook('filter:topic.reply', data, next);
 			},
 			function (filteredData, next) {
-				content = filteredData.content || data.content;
-				if (content) {
-					content = utils.rtrim(content);
+				if (data.content) {
+					data.content = utils.rtrim(data.content);
 				}
 
-				check(content, meta.config.minimumPostLength, meta.config.maximumPostLength, 'content-too-short', 'content-too-long', next);
+				check(data.content, meta.config.minimumPostLength, meta.config.maximumPostLength, 'content-too-short', 'content-too-long', next);
 			},
 			function (next) {
-				posts.create({
-					uid: uid,
-					tid: tid,
-					handle: data.handle,
-					content: content,
-					toPid: data.toPid,
-					timestamp: data.timestamp,
-					ip: data.req ? data.req.ip : null,
-				}, next);
+				data.ip = data.req ? data.req.ip : null;
+				posts.create(data, next);
 			},
 			function (_postData, next) {
 				postData = _postData;
@@ -307,7 +298,7 @@ module.exports = function (Topics) {
 						posts.getUserInfoForPosts([postData.uid], uid, next);
 					},
 					topicInfo: function (next) {
-						Topics.getTopicFields(tid, ['tid', 'title', 'slug', 'cid', 'postcount', 'mainPid'], next);
+						Topics.getTopicFields(tid, ['tid', 'uid', 'title', 'slug', 'cid', 'postcount', 'mainPid'], next);
 					},
 					parents: function (next) {
 						Topics.addParentPosts([postData], next);

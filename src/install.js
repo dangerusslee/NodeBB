@@ -126,7 +126,8 @@ function setupConfig(next) {
 				var config = {};
 				var redisQuestions = require('./database/redis').questions;
 				var mongoQuestions = require('./database/mongo').questions;
-				var allQuestions = questions.main.concat(questions.optional).concat(redisQuestions).concat(mongoQuestions);
+				var postgresQuestions = require('./database/postgres').questions;
+				var allQuestions = questions.main.concat(questions.optional).concat(redisQuestions).concat(mongoQuestions).concat(postgresQuestions);
 
 				allQuestions.forEach(function (question) {
 					config[question.name] = install.values[question.name] || question.default || undefined;
@@ -178,8 +179,12 @@ function completeConfigSetup(config, next) {
 			if (urlObj.port) {
 				config.port = urlObj.port;
 			}
-			urlObj.pathname = null;
-			urlObj.path = null;
+
+			// Remove trailing slash from non-subfolder installs
+			if (urlObj.path === '/') {
+				urlObj.path = '';
+				urlObj.pathname = '';
+			}
 
 			config.url = url.format(urlObj);
 
@@ -376,7 +381,11 @@ function createGlobalModeratorsGroup(next) {
 
 function giveGlobalPrivileges(next) {
 	var privileges = require('./privileges');
-	privileges.global.give(['chat', 'upload:post:image', 'signature'], 'registered-users', next);
+	var defaultPrivileges = [
+		'chat', 'upload:post:image', 'signature', 'search:content',
+		'search:users', 'search:tags', 'local:login',
+	];
+	privileges.global.give(defaultPrivileges, 'registered-users', next);
 }
 
 function createCategories(next) {

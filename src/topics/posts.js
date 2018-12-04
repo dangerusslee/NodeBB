@@ -16,10 +16,7 @@ module.exports = function (Topics) {
 	Topics.onNewPostMade = function (postData, callback) {
 		async.series([
 			function (next) {
-				Topics.increasePostCount(postData.tid, next);
-			},
-			function (next) {
-				Topics.updateTimestamp(postData.tid, postData.timestamp, next);
+				Topics.updateLastPostTime(postData.tid, postData.timestamp, next);
 			},
 			function (next) {
 				Topics.addPostToTopic(postData.tid, postData, next);
@@ -150,7 +147,7 @@ module.exports = function (Topics) {
 				post.display_post_menu = topicPrivileges.isAdminOrMod || (post.selfPost && !topicData.locked) || ((loggedIn || topicData.postSharing.length) && !post.deleted);
 				post.ip = topicPrivileges.isAdminOrMod ? post.ip : undefined;
 
-				posts.modifyPostByPrivilege(post, topicPrivileges.isAdminOrMod);
+				posts.modifyPostByPrivilege(post, topicPrivileges);
 			}
 		});
 	};
@@ -288,6 +285,9 @@ module.exports = function (Topics) {
 				}
 			},
 			function (next) {
+				Topics.increasePostCount(tid, next);
+			},
+			function (next) {
 				db.sortedSetIncrBy('tid:' + tid + ':posters', 1, postData.uid, next);
 			},
 			function (count, next) {
@@ -303,6 +303,9 @@ module.exports = function (Topics) {
 					'tid:' + tid + ':posts',
 					'tid:' + tid + ':posts:votes',
 				], postData.pid, next);
+			},
+			function (next) {
+				Topics.decreasePostCount(tid, next);
 			},
 			function (next) {
 				db.sortedSetIncrBy('tid:' + tid + ':posters', -1, postData.uid, next);

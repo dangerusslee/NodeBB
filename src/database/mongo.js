@@ -62,7 +62,7 @@ mongoModule.questions = [
 mongoModule.helpers = mongoModule.helpers || {};
 mongoModule.helpers.mongo = require('./mongo/helpers');
 
-function getConnectionString() {
+mongoModule.getConnectionString = function () {
 	var usernamePassword = '';
 	if (nconf.get('mongo:username') && nconf.get('mongo:password')) {
 		usernamePassword = nconf.get('mongo:username') + ':' + encodeURIComponent(nconf.get('mongo:password')) + '@';
@@ -90,23 +90,27 @@ function getConnectionString() {
 	}
 
 	return nconf.get('mongo:uri') || 'mongodb://' + usernamePassword + servers.join() + '/' + nconf.get('mongo:database');
-}
+};
+
+mongoModule.getConnectionOptions = function () {
+	var connOptions = {
+		poolSize: 10,
+		reconnectTries: 3600,
+		reconnectInterval: 1000,
+		autoReconnect: true,
+		useNewUrlParser: true,
+	};
+
+	return _.merge(connOptions, nconf.get('mongo:options') || {});
+};
 
 mongoModule.init = function (callback) {
 	callback = callback || function () { };
 
 	var mongoClient = require('mongodb').MongoClient;
 
-	var connString = getConnectionString();
-
-	var connOptions = {
-		poolSize: 10,
-		reconnectTries: 3600,
-		reconnectInterval: 1000,
-		autoReconnect: true,
-	};
-
-	connOptions = _.merge(connOptions, nconf.get('mongo:options') || {});
+	var connString = mongoModule.getConnectionString();
+	var connOptions = mongoModule.getConnectionOptions();
 
 	mongoClient.connect(connString, connOptions, function (err, _client) {
 		if (err) {
@@ -115,7 +119,6 @@ mongoModule.init = function (callback) {
 		}
 		client = _client;
 		db = client.db();
-
 		mongoModule.client = db;
 
 		require('./mongo/main')(db, mongoModule);
@@ -123,6 +126,10 @@ mongoModule.init = function (callback) {
 		require('./mongo/sets')(db, mongoModule);
 		require('./mongo/sorted')(db, mongoModule);
 		require('./mongo/list')(db, mongoModule);
+		require('./mongo/transaction')(db, mongoModule);
+
+		mongoModule.async = require('../promisify')(mongoModule, ['client', 'sessionStore']);
+
 		callback();
 	});
 };
@@ -272,5 +279,5 @@ mongoModule.close = function (callback) {
 
 mongoModule.socketAdapter = function () {
 	var mongoAdapter = require('socket.io-adapter-mongo');
-	return mongoAdapter(getConnectionString());
+	return mongoAdapter(mongoModule.getConnectionString());
 };
